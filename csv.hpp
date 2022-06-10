@@ -8,8 +8,6 @@
 #include <assert.h>
 #include <stdarg.h>
 
-#include "log.hpp"
-
 #ifdef _WIN32
 #include <Windows.h>
 #include <direct.h>
@@ -20,6 +18,8 @@
 #include <stdlib.h>
 #endif
 
+#include"baseFun.hpp"
+
 using namespace std;
 
 namespace pp
@@ -28,35 +28,46 @@ namespace pp
 	{
 	public:
 		CCsvFile();
-		CCsvFile(const string& logName);
-		~CCsvFile();
+		CCsvFile(const string& logName)
+			:m_logName(logName)
+		{
+			init();
+		}
 
-	public:
-		void init();
+		~CCsvFile()
+		{
+			quit();
+		}
 
-	public:
-		void writeLine(const char* pformat, ...);
-		void quit();
-		static string getDate();
-		static string getDateTimeS();
-		static string getDateTimeNS();
-		static void sleep(size_t us);
 
-	private:
-		static void getTime(Time& dateTime);
-		static struct tm localTime();
-		string logDateTimeNS();
+		void init()
+		{
+			m_log.open((m_logName + "_" + CBase::getDateTimeS() + ".csv").c_str(), ios::app|ios::out);
+		}
 
-#ifdef _WIN32
-#else
-		static struct timespec localTimeNs();
-#endif
+
+		void writeLine(const char* pformat, ...)
+		{
+			va_start(m_args, pformat);
+			va_end(m_args);
+			vsnprintf(m_logBuf, sizeof(m_logBuf), pformat, m_args);
+			assert(m_log.is_open());
+
+			m_log << m_logBuf << endl;
+		}
+
+		void quit()
+		{
+			m_log.close();
+		}
+
+
 
 	private:
 		string m_logName;
 
 		va_list					m_args;
-		fstream					m_log;					// 普通日志
+		fstream					m_log;					
 
 		char					m_logBuf[_LOG_BUFF_COUNT_];
 	};
