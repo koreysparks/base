@@ -203,7 +203,7 @@ static bool isValidDouble(double value)
 	return (abs(value) > _MIN_DOUBLE_VALUE_ || abs(value) > _MAX_DOUBLE_VALUE_);
 }
 
-static bool bind_cpu(int cpu_id)
+static int bind_cpu(int cpu_id)
 {
 #ifndef _WIN32
 		int	cpu = (int)sysconf(_SC_NPROCESSORS_ONLN);
@@ -214,20 +214,20 @@ static bool bind_cpu(int cpu_id)
 			return false;
 		}
 
-		int thd_id = pthread_self();
 		CPU_ZERO(&cpu_info);
 		CPU_SET(cpu_id, &cpu_info);
 
-		if(0 == pthread_setaffinity_np( thd_id, sizeof(cpu_set_t), &cpu_info )  )
+		int ret = pthread_setaffinity_np( pthread_self(), sizeof(cpu_set_t), &cpu_info );
+		if(0 != ret)
 		{
-			printf("bind cpu failed  cpu id:%d thread id:%d\n", cpu_id, thd_id);
-			return false;
+			printf("bind cpu failed  cpu id:%d thread id:%d  ret:%d\n", cpu_id, pthread_self(), ret);
+			return ret;
 		}
 
-		printf("bind cpu success  cpu id:%d thread id:%d\n", cpu_id, thd_id);
+		printf("bind cpu success  cpu id:%d thread id:%d\n", cpu_id, pthread_self());
 #endif
 
-		return true;
+		return 0;
 } 
 
 static void converTimeStamp(unsigned long long int timeStamp, tm& tmResult, unsigned int& nanoSec)
@@ -443,6 +443,11 @@ static vector<string> getTradingDates(string fileName)
 	while (!file.eof())
 	{
 		getline(file, data);
+#ifndef _WIN32
+		size_t len = data.length();
+		data = string(data.c_str(), data.c_str() + len - 1);
+#endif  
+
 		tradingDates.push_back(data);
 	}
 
