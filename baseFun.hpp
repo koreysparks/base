@@ -83,11 +83,13 @@ public:
 
 struct Time
 {
-	Time operator=(const Time& t)
+	Time& operator=(const Time& t)
 	{
 		Date = t.Date;
 		TimeS = t.TimeS;
 		Ns = t.Ns;
+
+		return *this;
 	}
 
 	bool empty()
@@ -203,7 +205,7 @@ static bool isValidDouble(double value)
 	return (abs(value) > _MIN_DOUBLE_VALUE_ || abs(value) > _MAX_DOUBLE_VALUE_);
 }
 
-static int bind_cpu(int cpu_id)
+static bool bind_cpu(int cpu_id)
 {
 #ifndef _WIN32
 		int	cpu = (int)sysconf(_SC_NPROCESSORS_ONLN);
@@ -220,14 +222,14 @@ static int bind_cpu(int cpu_id)
 		int ret = pthread_setaffinity_np( pthread_self(), sizeof(cpu_set_t), &cpu_info );
 		if(0 != ret)
 		{
-			printf("bind cpu failed  cpu id:%d thread id:%d  ret:%d\n", cpu_id, pthread_self(), ret);
-			return ret;
+			printf("bind cpu failed  cpu id:%d  thread id:%d,  ret:%d\n", cpu_id, pthread_self(), ret);
+			return false;
 		}
 
 		printf("bind cpu success  cpu id:%d thread id:%d\n", cpu_id, pthread_self());
 #endif
 
-		return 0;
+		return true;
 } 
 
 static void converTimeStamp(unsigned long long int timeStamp, tm& tmResult, unsigned int& nanoSec)
